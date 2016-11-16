@@ -11,6 +11,36 @@ function setBidder(name, interval, ee) {
     ee.on(auctionEndEvent, () => clearInterval(i));
 }
 
+
+function Auction(ee, startTime, auctionTime) {
+    this._ee = ee;
+    this._startTime = startTime;
+    this._auctionTime = auctionTime;
+    this._maxBid = 0;
+    this._lastBidder = '';
+    this._interval = undefined;
+
+    this.setLastBidder = (name) => {
+        this._lastBidder = name;
+        this._maxBid += 0.1;
+        console.log(this._lastBidder, this._maxBid);
+        clearTimeout(this._interval);
+        this._interval = setTimeout(this._callBack, this._auctionTime - (new Date().getTime() - this._startTime + increaseTime));
+    };
+
+    this.start = () => {
+        this._interval = setTimeout(this._callBack, this._auctionTime);
+    };
+
+    this._callBack = () => {
+        // on auction end event we stop
+        this._ee.emit(auctionEndEvent);
+        console.log('Final Price', this._maxBid);
+        console.log('Winner', this._lastBidder);
+    }
+
+}
+
 fs.readFile('input.txt', 'utf8', (err, data) => {
 
     if (err) {
@@ -18,19 +48,11 @@ fs.readFile('input.txt', 'utf8', (err, data) => {
         return;
     }
 
-    // TODO fix auction time as 60000
     const eventEmitter = new events.EventEmitter();
-
-    // TODO replace by Redis
-    var maxBid = 0;
-    var lastBidder = '';
-
+    const auction = new Auction(eventEmitter, new Date().getTime(), auctionTime);
 
     eventEmitter.on(bidEvent, (name) => {
-        maxBid += 0.1;
-        lastBidder = name;
-        console.log(name, maxBid);
-
+        auction.setLastBidder(name);
     });
 
     data.split('\n').forEach(line => {
@@ -38,23 +60,6 @@ fs.readFile('input.txt', 'utf8', (err, data) => {
         setBidder(arr[0], parseFloat(arr[2]), eventEmitter);
     });
 
-    function startAuction(ee, startTime) {
-        const t = setTimeout(() => {
-
-            // on auction end event we stop
-            ee.emit(auctionEndEvent);
-            console.log('Final Price', maxBid);
-            console.log('Winner', lastBidder);
-
-        }, auctionTime);
-
-        // on bid event we increase the auction time
-        ee.on(bidEvent, () => {
-            clearTimeout(t);
-            startAuction(ee, new Date().getTime() - startTime + increaseTime)
-        });
-    }
-
-    startAuction(eventEmitter, new Date().getTime());
+    auction.start();
 
 });
