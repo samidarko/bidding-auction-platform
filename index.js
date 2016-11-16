@@ -38,10 +38,15 @@ function setBidder(name, interval, ee) {
 /**
  * A class to manage the application state
  * @param ee
+ * @type {EventEmitter}
  * @param startTime
+ * @type {int}
  * @param auctionTime
+ * @type {int}
  * @param increaseTime
+ * @type {int}
  * @param rc
+ * @type {RedisClient}
  * @constructor
  */
 function Auction(ee, startTime, auctionTime, increaseTime, rc) {
@@ -103,8 +108,8 @@ fs.readFile('input.txt', 'utf8', (err, data) => {
         return;
     }
 
-    const eventEmitter = new events.EventEmitter();
-    const auction = new Auction(eventEmitter, new Date().getTime(), 60000, 5000, client);
+    const eventEmitter = new events.EventEmitter(), auctionTime = 60000, increaseTime = 5000;
+    const auction = new Auction(eventEmitter, new Date().getTime(), auctionTime, increaseTime, client);
 
     eventEmitter.on(bidEvent, (name) => {
         auction.setLastBidder(name);
