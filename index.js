@@ -30,7 +30,14 @@ function setBidder(name, interval, ee) {
     ee.on(auctionEndEvent, () => clearInterval(i));
 }
 
-
+/**
+ * A class to manage the application state
+ * @param ee
+ * @param startTime
+ * @param auctionTime
+ * @param increaseTime
+ * @constructor
+ */
 function Auction(ee, startTime, auctionTime, increaseTime) {
     this._ee = ee;
     this._startTime = startTime;
