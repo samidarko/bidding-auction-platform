@@ -1,0 +1,3 @@
+vivek,200,60
+kedar,100,20
+vincent,50,30
