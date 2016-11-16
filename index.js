@@ -22,7 +22,6 @@ fs.readFile('input.txt', 'utf8', (err, data) => {
     const eventEmitter = new events.EventEmitter();
 
     // TODO replace by Redis
-
     var maxBid = 0;
     var lastBidder = '';
 
