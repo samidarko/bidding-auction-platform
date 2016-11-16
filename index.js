@@ -1,8 +1,27 @@
+/**
+ * Bidding platform for auctions
+ * @Author Sami Darko <samidarko@gmail.com> (https://github.com/samidarko)
+ * @Date 16 Nov. 2016
+ */
 const fs = require('fs');
 const events = require('events');
 
+/**
+ * Events names
+ * @type {string}
+ */
 const bidEvent = 'bidEventName', auctionEndEvent = 'auctionEndEvent';
 
+
+/**
+ * Set a bidder and emit an event for a give interval
+ * @param name
+ * @type {string}
+ * @param interval
+ * @type {float}
+ * @param ee
+ * @type {EventEmitter}
+ */
 function setBidder(name, interval, ee) {
     console.log('create bidder', name, interval);
     const i = setInterval(() => {
@@ -24,6 +43,7 @@ function Auction(ee, startTime, auctionTime, increaseTime) {
     this.setLastBidder = (name) => {
         this._lastBidder = name;
         this._maxBid += 0.1;
+        // TODO set redis
         console.log(this._lastBidder, this._maxBid);
         clearTimeout(this._interval);
         const spentTime = (new Date().getTime() - this._startTime);
@@ -38,6 +58,7 @@ function Auction(ee, startTime, auctionTime, increaseTime) {
     this._callBack = () => {
         // on auction end event we stop
         this._ee.emit(auctionEndEvent);
+        // TODO get from redis
         console.log('Final Price', this._maxBid);
         console.log('Winner', this._lastBidder);
         console.log('total time', (new Date().getTime() - this._startTime)/1000, 'in seconds')
