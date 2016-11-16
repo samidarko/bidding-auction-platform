@@ -63,7 +63,7 @@ function Auction(ee, startTime, auctionTime, increaseTime, rc) {
             this._rc.set(this._maxBidKey, parseFloat(value) + 0.1);
             console.log(name, parseFloat(value) + 0.1);
             clearTimeout(this._interval);
-            const spentTime = (new Date().getTime() - this._startTime);
+            const spentTime = new Date().getTime() - this._startTime;
             this._auctionTime += this._increaseTime;
             this._interval = setTimeout(this._callBack, this._auctionTime - spentTime);
         });
