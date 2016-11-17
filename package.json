@@ -8,5 +8,8 @@
     "start": "node index.js"
   },
   "author": "Sami Darko <samidarko@gmail.com> (https://github.com/samidarko)",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "redis": "2.6.3"
+  }
 }
