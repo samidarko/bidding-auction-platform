@@ -12,7 +12,7 @@ const redis = require("redis"),
  * Events names
  * @type {string}
  */
-const bidEvent = 'bidEventName', auctionEndEvent = 'auctionEndEvent';
+const bidEvent = 'bidEvent', bidderStopEvent = 'bidderStopEvent';
 
 client.on("error", function (err) {
     console.log("Error connecting Redis" + err);
@@ -22,17 +22,31 @@ client.on("error", function (err) {
  * Set a bidder and emit an event for a give interval
  * @param name
  * @type {string}
+ * @param totalBids
+ * @type {int}
  * @param interval
  * @type {float}
  * @param ee
  * @type {EventEmitter}
  */
-function setBidder(name, interval, ee) {
+function setBidder(name, totalBids, interval, ee) {
+
     console.log('create bidder', name, interval);
-    const i = setInterval(() => {
-        ee.emit(bidEvent, name)
-    }, 1000 * interval);
-    ee.on(auctionEndEvent, () => clearInterval(i));
+
+    function bid(tb) {
+        if (tb >= 0) {
+            setTimeout(() => {
+                ee.emit(bidEvent, name);
+                bid(tb-1);
+            }, interval);
+        } else {
+            ee.emit(bidderStopEvent, name);
+            console.log(name, 'finished bidding');
+        }
+    }
+
+    bid(totalBids);
+
 }
 
 /**
@@ -47,9 +61,11 @@ function setBidder(name, interval, ee) {
  * @type {int}
  * @param rc
  * @type {RedisClient}
+ * @param nbBidders
+ * @type {int}
  * @constructor
  */
-function Auction(ee, startTime, auctionTime, increaseTime, rc) {
+function Auction(ee, startTime, auctionTime, increaseTime, rc, nbBidders) {
     this._ee = ee;
     this._startTime = startTime;
     this._auctionTime = auctionTime;
@@ -58,6 +74,17 @@ function Auction(ee, startTime, auctionTime, increaseTime, rc) {
     this._lastBidderKey = 'lastBidder';
     this._interval = undefined;
     this._rc = rc;
+    this._nbBidders = nbBidders;
+
+    this._ee.on(bidderStopEvent, () => {
+        this._nbBidders -= 1;
+        console.log('received event no more bidders');
+        if (this._nbBidders === 0) {
+            console.log('no more bidders');
+            clearTimeout(this._interval);
+            this._auctionTime = 0;
+        }
+    });
 
     this.setLastBidder = (name) => {
         this._rc.set(this._lastBidderKey, name);
@@ -90,7 +117,6 @@ function Auction(ee, startTime, auctionTime, increaseTime, rc) {
                 if (err) {
                     console.log('error in _callBack getting', this._lastBidderKey, err)
                 }
-                this._ee.emit(auctionEndEvent);
                 this._rc.end(true);
                 console.log('Final Price', total);
                 console.log('Winner', lastBidder);
@@ -109,16 +135,19 @@ fs.readFile('input.txt', 'utf8', (err, data) => {
     }
 
     const eventEmitter = new events.EventEmitter(), auctionTime = 60000, increaseTime = 5000;
-    const auction = new Auction(eventEmitter, new Date().getTime(), auctionTime, increaseTime, client);
 
     eventEmitter.on(bidEvent, (name) => {
         auction.setLastBidder(name);
     });
 
-    data.split('\n').forEach(line => {
+    // connect the bidders and extract how many they are
+    const nbBidders = data.split('\n').reduce((acc, line) => {
         const arr = line.split(',');
-        setBidder(arr[0], parseFloat(arr[2]), eventEmitter);
-    });
+        setBidder(arr[0], parseInt(arr[1]), parseFloat(arr[2]), eventEmitter);
+        return acc+1;
+    }, 0);
+
+    const auction = new Auction(eventEmitter, new Date().getTime(), auctionTime, increaseTime, client, nbBidders);
 
     auction.start();
 
